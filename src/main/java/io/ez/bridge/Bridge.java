@@ -2,10 +2,13 @@ package io.ez.bridge;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 
 public class Bridge extends AbstractVerticle {
+
+    private JsonArray modules = new JsonArray();
 
     @Override
     public void start() throws Exception {
@@ -22,6 +25,19 @@ public class Bridge extends AbstractVerticle {
                         }
                     });
         });
+
+        for (Object m : this.modules) {
+            JsonObject module = (JsonObject)m;
+            eventBus.consumer("modules."+module.getInteger("id")+".change", (o) -> {
+                JsonObject innerModule = (JsonObject) o.body();
+                client.post(80, innerModule.getString("url"), "/change")
+                        .sendBuffer(innerModule.toBuffer(), ar -> {
+                            if (ar.succeeded()) {
+                                System.out.println("ok");
+                            }
+                        });
+            });
+        }
 
 
     }
